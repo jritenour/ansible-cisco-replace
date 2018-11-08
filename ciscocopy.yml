@@ -1,0 +1,27 @@
+---
+- hosts: oldswitch
+  connection: network_cli
+  become: yes
+  tasks:
+    - name: backup config
+      ios_config:
+        backup: yes
+      register: backupoutput
+    - set_fact: 
+        confpath='{{ backupoutput.backup_path }}'
+    - name: Switch interface types for new switch
+      replace:
+        path: '{{ confpath }}'
+        regexp: GigabitEthernet
+        replace: TenGigabitEthernet
+      delegate_to: localhost
+      become: no
+
+- hosts: newswitch
+  connection: network_cli
+  become: yes
+  tasks:
+    - name: Copy new config to new switch
+      copy: 
+        src:  '{{ confpath }}'
+        dest: running-config
